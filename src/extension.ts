@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 function createSymbolDecoration(): vscode.TextEditorDecorationType {
   return vscode.window.createTextEditorDecorationType({
     fontStyle: 'bold',
-    textDecoration: ';font-size:1.5em', // Add any additional styles you want to apply to the symbols
+    textDecoration: ';font-size:1.5em',
   });
 }
 
@@ -14,7 +14,10 @@ function insertEmoji(emoji: string) {
   const symbolDecoration = createSymbolDecoration();
 
   editor.edit((editBuilder) => {
-    editBuilder.insert(editor.selection.active, emoji);
+    const currentPosition = editor.selection.active;
+    const line = currentPosition.line;
+    const endOfLine = editor.document.lineAt(line).range.end;
+    editBuilder.insert(endOfLine, emoji);
   }).then((success) => {
     if (success) {
       const currentPosition = editor.selection.active;
@@ -22,15 +25,27 @@ function insertEmoji(emoji: string) {
       const end = new vscode.Position(currentPosition.line, currentPosition.character);
       const range = new vscode.Range(start, end);
       editor.setDecorations(symbolDecoration, [range]);
+
+      setTimeout(() => {
+        editor.setDecorations(symbolDecoration, []);
+      }, 3000);
     }
   });
 }
+
+const emojis = ['🙂', '🧠', '😎', '👌', '💯', '🔥', '✌️', '✅', '📊', '🚀'];
+
+function getRandomEmoji(): string {
+  return emojis[Math.floor(Math.random() * emojis.length)];
+}
+
+let typingTimer: NodeJS.Timeout;
 
 export function activate(context: vscode.ExtensionContext) {
   let symbolDecoration = createSymbolDecoration();
 
   let disposable = vscode.commands.registerCommand('type-o-mojis.showRandomEmoji', () => {
-    insertEmoji('😎');
+    insertEmoji(getRandomEmoji());
   });
 
   context.subscriptions.push(disposable);
@@ -41,22 +56,13 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    if (event.contentChanges.length > 0) {
-      const change = event.contentChanges[0];
-      if (change.text.length === 1) {
-        insertEmoji('👍');
-      }
-    }
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+      insertEmoji(getRandomEmoji());
+    }, 1000);
   });
 
   context.subscriptions.push(textChangeDisposable);
-
-  const statusBarIndicator = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBarIndicator.text = `$(emoji) Type-o-Mojis`;
-  statusBarIndicator.tooltip = 'Type-o-Mojis is active!';
-  statusBarIndicator.command = 'type-o-mojis.showRandomEmoji';
-  statusBarIndicator.show();
-  context.subscriptions.push(statusBarIndicator);
 }
 
 export function deactivate() {}
