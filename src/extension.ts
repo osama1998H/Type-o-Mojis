@@ -26,12 +26,6 @@ function insertEmoji(emoji: string) {
       const end = new vscode.Position(newPosition.line, newPosition.character);
       const range = new vscode.Range(start, end);
       editor.setDecorations(symbolDecoration, [range]);
-
-      setTimeout(() => {
-        editor.edit((editBuilder) => {
-          editBuilder.delete(range);
-        });
-      }, 3000);
     }
   });
 }
@@ -43,6 +37,7 @@ function getRandomEmoji(): string {
 }
 
 let typingTimer: NodeJS.Timeout;
+let lastLineAdded = -1;
 
 export function activate(context: vscode.ExtensionContext) {
   let symbolDecoration = createSymbolDecoration();
@@ -59,12 +54,18 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {
-      if (event.contentChanges.length > 0) {
-        insertEmoji(getRandomEmoji());
-      }
-    }, 1000);
+    const currentPosition = activeEditor.selection.active;
+    const currentLine = currentPosition.line;
+
+    if (currentLine !== lastLineAdded) {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => {
+        if (event.contentChanges.length > 0) {
+          insertEmoji(getRandomEmoji());
+          lastLineAdded = currentLine;
+        }
+      }, 1000);
+    }
   });
 
   context.subscriptions.push(textChangeDisposable);
