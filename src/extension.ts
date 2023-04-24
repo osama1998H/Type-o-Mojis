@@ -13,21 +13,24 @@ function insertEmoji(emoji: string) {
 
   const symbolDecoration = createSymbolDecoration();
 
+  const currentPosition = editor.selection.active;
+  const line = currentPosition.line;
+  const endOfLine = editor.document.lineAt(line).range.end;
+
   editor.edit((editBuilder) => {
-    const currentPosition = editor.selection.active;
-    const line = currentPosition.line;
-    const endOfLine = editor.document.lineAt(line).range.end;
     editBuilder.insert(endOfLine, emoji);
   }).then((success) => {
     if (success) {
-      const currentPosition = editor.selection.active;
-      const start = new vscode.Position(currentPosition.line, currentPosition.character - emoji.length);
-      const end = new vscode.Position(currentPosition.line, currentPosition.character);
+      const newPosition = editor.selection.active;
+      const start = new vscode.Position(newPosition.line, newPosition.character - emoji.length);
+      const end = new vscode.Position(newPosition.line, newPosition.character);
       const range = new vscode.Range(start, end);
       editor.setDecorations(symbolDecoration, [range]);
 
       setTimeout(() => {
-        editor.setDecorations(symbolDecoration, []);
+        editor.edit((editBuilder) => {
+          editBuilder.delete(range);
+        });
       }, 3000);
     }
   });
@@ -58,7 +61,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     clearTimeout(typingTimer);
     typingTimer = setTimeout(() => {
-      insertEmoji(getRandomEmoji());
+      if (event.contentChanges.length > 0) {
+        insertEmoji(getRandomEmoji());
+      }
     }, 1000);
   });
 
