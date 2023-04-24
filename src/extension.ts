@@ -3,14 +3,28 @@ import * as path from 'path';
 
 let prevWordCount = 0;
 
-function loadStyles(context: vscode.ExtensionContext) {
-  const stylePath = vscode.Uri.file(path.join(context.extensionPath, 'src', 'media', 'style.css'));
-  const styleUri = stylePath.with({ scheme: 'vscode-resource' });
-  const styleLink = `<link rel="stylesheet" type="text/css" href="${styleUri}"/>`;
+function createSymbolDecoration(): vscode.TextEditorDecorationType {
+  return vscode.window.createTextEditorDecorationType({
+    fontStyle: 'bold',
+    textDecoration: ';font-size:1.5em', // Add any additional styles you want to apply to the symbols
+  });
+}
 
-  vscode.workspace.onDidOpenTextDocument((document) => {
-    if (document.uri.scheme === 'file') {
-      vscode.commands.executeCommand('editor.action.insertSnippet', { snippet: `${styleLink}` });
+function insertEmoji(emoji: string) {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {return;}
+
+  const symbolDecoration = createSymbolDecoration();
+
+  editor.edit((editBuilder) => {
+    editBuilder.insert(editor.selection.active, emoji);
+  }).then((success) => {
+    if (success) {
+      const currentPosition = editor.selection.active;
+      const start = new vscode.Position(currentPosition.line, currentPosition.character - emoji.length);
+      const end = new vscode.Position(currentPosition.line, currentPosition.character);
+      const range = new vscode.Range(start, end);
+      editor.setDecorations(symbolDecoration, [range]);
     }
   });
 }
@@ -54,7 +68,7 @@ function getEncouragingSymbol(speed: number, continuity: number): string {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  loadStyles(context);
+  let symbolDecoration = createSymbolDecoration();
   vscode.workspace.onDidChangeTextDocument((event) => {
     const metrics = getTypingMetrics(event.document);
     const symbol = getEncouragingSymbol(metrics.speed, metrics.continuity);
@@ -63,11 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (Math.floor(metrics.wordCount / wordInterval) > Math.floor(prevWordCount / wordInterval)) {
       const editor = vscode.window.activeTextEditor;
       if (editor) {
-        editor.edit((editBuilder) => {
-          const position = editor.selection.active;
-          const symbolWithAnimation = `<span style="animation: fadeIn 1s, bounce 1s">${symbol}</span>`;
-          editBuilder.insert(position, symbolWithAnimation);
-        });
+        insertEmoji(symbol);
 
       }
     }
