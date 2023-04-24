@@ -1,26 +1,64 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+let prevWordCount = 0;
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "type-o-mojis" is now active!');
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('type-o-mojis.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Type-o-Mojis!');
-	});
-
-	context.subscriptions.push(disposable);
+function countWords(text: string): number {
+  const words = text.trim().split(/\s+/);
+  return words.filter(word => word.length > 0).length;
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+function getTypingMetrics(document: vscode.TextDocument): { speed: number, continuity: number, wordCount: number } {
+  // Implement logic to measure typing speed and continuity
+  const wordCount = countWords(document.getText());
+  // ... calculate speed and continuity as needed
+  return { speed: 0, continuity: 0, wordCount }; // Use actual calculated values for speed and continuity
+}
+
+function getEncouragingSymbol(speed: number, continuity: number): string {
+  const symbolsConfig = vscode.workspace.getConfiguration('type-o-mojis');
+  const customSymbols = symbolsConfig.get<string[]>('customSymbols');
+
+  const hourOfDay = new Date().getHours();
+  let symbols = customSymbols;
+
+  if (hourOfDay >= 6 && hourOfDay < 12) {
+    // Morning symbols
+    symbols = ["🌞", "🍳", "☕", "🌅"];
+  } else if (hourOfDay >= 12 && hourOfDay < 18) {
+    // Afternoon symbols
+    symbols = ["🌤", "🍔", "🚴", "🏃"];
+  } else if (hourOfDay >= 18 && hourOfDay < 22) {
+    // Evening symbols
+    symbols = ["🌙", "🍽", "📺", "💆‍♂️"];
+  } else {
+    // Night symbols
+    symbols = ["🌚", "🦉", "🌃", "🛌"];
+  }
+
+  const index = Math.floor(Math.random() * symbols.length);
+  return symbols[index];
+}
+
+export function activate(context: vscode.ExtensionContext) {
+  vscode.workspace.onDidChangeTextDocument((event) => {
+    const metrics = getTypingMetrics(event.document);
+    const symbol = getEncouragingSymbol(metrics.speed, metrics.continuity);
+
+    const wordInterval = 10;
+    if (Math.floor(metrics.wordCount / wordInterval) > Math.floor(prevWordCount / wordInterval)) {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        editor.edit((editBuilder) => {
+  const position = editor.selection.active;
+  const symbolWithAnimation = `<span style="animation: fadeIn 1s, bounce 1s">${symbol}</span>`;
+  editBuilder.insert(position, symbolWithAnimation);
+});
+
+      }
+    }
+
+    prevWordCount = metrics.wordCount;
+  });
+}
+
+export function deactivate() { }

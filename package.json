@@ -9,13 +9,30 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
-  "main": "./dist/extension.js",
+  "configuration": {
+    "type": "object",
+    "properties": {
+      "type-o-mojis.customSymbols": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "default": ["🙂", "🧠", "😎", "👌", "💯", "🔥", "✌️", "✅", "📊", "🚀"],
+        "description": "Custom symbols used for encouragement"
+      }
+    }
+  },
+  "activationEvents": ["onLanguage:*"],
+  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "type-o-mojis.helloWorld",
-        "title": "Hello World"
+        "command": "type-o-mojis.activate",
+        "title": "Activate Type-o-Mojis"
+      },
+      {
+        "command": "type-o-mojis.deactivate",
+        "title": "Deactivate Type-o-Mojis"
       }
     ]
   },
