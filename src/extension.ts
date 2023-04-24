@@ -1,6 +1,20 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 
 let prevWordCount = 0;
+
+function loadStyles(context: vscode.ExtensionContext) {
+  const stylePath = vscode.Uri.file(path.join(context.extensionPath, 'src', 'media', 'style.css'));
+  const styleUri = stylePath.with({ scheme: 'vscode-resource' });
+  const styleLink = `<link rel="stylesheet" type="text/css" href="${styleUri}"/>`;
+
+  vscode.workspace.onDidOpenTextDocument((document) => {
+    if (document.uri.scheme === 'file') {
+      vscode.commands.executeCommand('editor.action.insertSnippet', { snippet: `${styleLink}` });
+    }
+  });
+}
+
 
 function countWords(text: string): number {
   const words = text.trim().split(/\s+/);
@@ -40,6 +54,7 @@ function getEncouragingSymbol(speed: number, continuity: number): string {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  loadStyles(context);
   vscode.workspace.onDidChangeTextDocument((event) => {
     const metrics = getTypingMetrics(event.document);
     const symbol = getEncouragingSymbol(metrics.speed, metrics.continuity);
@@ -49,10 +64,10 @@ export function activate(context: vscode.ExtensionContext) {
       const editor = vscode.window.activeTextEditor;
       if (editor) {
         editor.edit((editBuilder) => {
-  const position = editor.selection.active;
-  const symbolWithAnimation = `<span style="animation: fadeIn 1s, bounce 1s">${symbol}</span>`;
-  editBuilder.insert(position, symbolWithAnimation);
-});
+          const position = editor.selection.active;
+          const symbolWithAnimation = `<span style="animation: fadeIn 1s, bounce 1s">${symbol}</span>`;
+          editBuilder.insert(position, symbolWithAnimation);
+        });
 
       }
     }
