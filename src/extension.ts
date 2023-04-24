@@ -7,10 +7,7 @@ function createSymbolDecoration(): vscode.TextEditorDecorationType {
   });
 }
 
-function insertEmoji(emoji: string) {
-  const editor = vscode.window.activeTextEditor;
-  if (!editor) { return; }
-
+function insertEmoji(emoji: string, editor: vscode.TextEditor) {
   const symbolDecoration = createSymbolDecoration();
 
   const currentPosition = editor.selection.active;
@@ -26,8 +23,20 @@ function insertEmoji(emoji: string) {
       const end = new vscode.Position(newPosition.line, newPosition.character);
       const range = new vscode.Range(start, end);
       editor.setDecorations(symbolDecoration, [range]);
+      emojiPosition = newPosition;
     }
   });
+}
+
+function removeEmoji(editor: vscode.TextEditor) {
+  if (emojiPosition) {
+    const start = new vscode.Position(emojiPosition.line, emojiPosition.character - 1);
+    const end = emojiPosition;
+    editor.edit((editBuilder) => {
+      editBuilder.delete(new vscode.Range(start, end));
+    });
+    emojiPosition = null;
+  }
 }
 
 const emojis = ['🙂', '🧠', '😎', '👌', '💯', '🔥', '✌️', '✅', '📊', '🚀'];
@@ -38,12 +47,16 @@ function getRandomEmoji(): string {
 
 let typingTimer: NodeJS.Timeout;
 let lastLineAdded = -1;
+let emojiPosition: vscode.Position | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
   let symbolDecoration = createSymbolDecoration();
 
   let disposable = vscode.commands.registerCommand('type-o-mojis.showRandomEmoji', () => {
-    insertEmoji(getRandomEmoji());
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+      insertEmoji(getRandomEmoji(), activeEditor);
+    }
   });
 
   context.subscriptions.push(disposable);
@@ -61,10 +74,12 @@ export function activate(context: vscode.ExtensionContext) {
       clearTimeout(typingTimer);
       typingTimer = setTimeout(() => {
         if (event.contentChanges.length > 0) {
-          insertEmoji(getRandomEmoji());
+          insertEmoji(getRandomEmoji(), activeEditor);
           lastLineAdded = currentLine;
         }
       }, 1000);
+    } else {
+      removeEmoji(activeEditor);
     }
   });
 
