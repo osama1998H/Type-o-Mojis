@@ -51,9 +51,12 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(textChangeDisposable);
 
-  if (vscode.window.activeTextEditor) {
-    vscode.window.showInformationMessage('Type-o-Mojis is active!');
-  }
+  const statusBarIndicator = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  statusBarIndicator.text = `$(emoji) Type-o-Mojis`;
+  statusBarIndicator.tooltip = 'Type-o-Mojis is active!';
+  statusBarIndicator.command = 'type-o-mojis.showRandomEmoji';
+  statusBarIndicator.show();
+  context.subscriptions.push(statusBarIndicator);
 }
 
 export function deactivate() {}

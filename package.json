@@ -22,8 +22,10 @@
       }
     }
   },
-  "activationEvents": ["onLanguage:*"],
-  "main": "./out/extension.js",
+  "activationEvents": [
+    "onCommand:type-o-mojis.showRandomEmoji",
+    "onLanguage:*"
+  ],  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
