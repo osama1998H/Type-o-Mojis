@@ -31,6 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     if (currentLine !== lastLineAdded) {
       clearTimeout(typingTimer);
+      removeEmoji(activeEditor, symbolDecoration);
       typingTimer = setTimeout(() => {
         if (event.contentChanges.length > 0) {
           const endOfLine = activeEditor.document.lineAt(currentLine).range.end;
@@ -38,8 +39,6 @@ export function activate(context: vscode.ExtensionContext) {
           lastLineAdded = currentLine;
         }
       }, 1000);
-    } else {
-      removeEmoji(activeEditor, symbolDecoration);
     }
   });
 
