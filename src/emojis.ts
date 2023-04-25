@@ -1,5 +1,7 @@
-export const emojis = ['🙂', '🧠', '😎', '👌', '💯', '🔥', '✌️', '✅', '📊', '🚀'];
+import { getEmojiSet } from './emojiSets';
+
 
 export function getRandomEmoji(): string {
-  return emojis[Math.floor(Math.random() * emojis.length)];
+  const emojiSet = getEmojiSet('default'); // Change 'default' to the desired set, or make it configurable
+  return emojiSet[Math.floor(Math.random() * emojiSet.length)];
 }

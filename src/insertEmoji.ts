@@ -3,14 +3,20 @@ import * as vscode from 'vscode';
 export function createSymbolDecoration(): vscode.TextEditorDecorationType {
   return vscode.window.createTextEditorDecorationType({
     fontStyle: 'bold',
-    textDecoration: ';font-size:1.5em',
+    textDecoration: ';font-size:1.5em', // Add any additional styles you want to apply to the symbols
   });
 }
 
-export function insertEmoji(emoji: string, editor: vscode.TextEditor, symbolDecoration: vscode.TextEditorDecorationType, startPosition: vscode.Position, endPosition: vscode.Position) {
-  editor.setDecorations(symbolDecoration, [{ range: new vscode.Range(startPosition, endPosition), renderOptions: { after: { contentText: emoji }}}]);
-}
-
-export function removeEmoji(editor: vscode.TextEditor, symbolDecoration: vscode.TextEditorDecorationType) {
-  editor.setDecorations(symbolDecoration, []);
+export function insertEmoji(editor: vscode.TextEditor, emoji: string, symbolDecoration: vscode.TextEditorDecorationType) {
+  editor.edit((editBuilder) => {
+    editBuilder.insert(editor.selection.active, emoji);
+  }).then((success) => {
+    if (success) {
+      const currentPosition = editor.selection.active;
+      const start = new vscode.Position(currentPosition.line, currentPosition.character - emoji.length);
+      const end = new vscode.Position(currentPosition.line, currentPosition.character);
+      const range = new vscode.Range(start, end);
+      editor.setDecorations(symbolDecoration, [range]);
+    }
+  });
 }

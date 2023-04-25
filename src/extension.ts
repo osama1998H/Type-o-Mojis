@@ -1,54 +1,41 @@
 import * as vscode from 'vscode';
-import { createSymbolDecoration, insertEmoji, removeEmoji } from './insertEmoji';
-import { getRandomEmoji } from './emojis';
-
-let typingTimer: NodeJS.Timeout;
-let lastLineAdded = -1;
-let symbolDecoration: vscode.TextEditorDecorationType;
+import { createSymbolDecoration, insertEmoji } from './insertEmoji';
+import { resetTypingStreak, increaseTypingStreak, getStreakReward } from './typingStreak';
 
 export function activate(context: vscode.ExtensionContext) {
-  symbolDecoration = createSymbolDecoration();
+  let symbolDecoration = createSymbolDecoration();
 
   let disposable = vscode.commands.registerCommand('type-o-mojis.showRandomEmoji', () => {
-    const activeEditor = vscode.window.activeTextEditor;
-    if (activeEditor) {
-      const currentPosition = activeEditor.selection.active;
-      const endOfLine = activeEditor.document.lineAt(currentPosition.line).range.end;
-      insertEmoji(getRandomEmoji(), activeEditor, symbolDecoration, currentPosition, endOfLine);
-    }
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) { return; }
+    insertEmoji(editor, '😎', symbolDecoration);
   });
 
   context.subscriptions.push(disposable);
 
   let textChangeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
-    const activeEditor = vscode.window.activeTextEditor;
-    if (!activeEditor || activeEditor.document !== event.document) {
-      return;
-    }
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) { return; }
 
-    const currentPosition = activeEditor.selection.active;
-    const currentLine = currentPosition.line;
-
-    if (currentLine !== lastLineAdded) {
-      clearTimeout(typingTimer);
-      removeEmoji(activeEditor, symbolDecoration);
-      typingTimer = setTimeout(() => {
-        if (event.contentChanges.length > 0) {
-          const endOfLine = activeEditor.document.lineAt(currentLine).range.end;
-          insertEmoji(getRandomEmoji(), activeEditor, symbolDecoration, currentPosition, endOfLine);
-          lastLineAdded = currentLine;
+    if (event.contentChanges.length > 0) {
+      const change = event.contentChanges[0];
+      if (change.text.length === 1) {
+        if (change.text === ' ' || change.text === '\n' || change.text === '\t') {
+          resetTypingStreak();
+        } else {
+          increaseTypingStreak();
+          const streakReward = getStreakReward();
+          if (streakReward) {
+            insertEmoji(editor, streakReward, symbolDecoration);
+          } else {
+            insertEmoji(editor, '👍', symbolDecoration);
+          }
         }
-      }, 1000);
+      }
     }
   });
 
   context.subscriptions.push(textChangeDisposable);
 }
 
-export function deactivate() {
-  clearTimeout(typingTimer);
-  const activeEditor = vscode.window.activeTextEditor;
-  if (activeEditor) {
-    removeEmoji(activeEditor, symbolDecoration);
-  }
-}
+export function deactivate() {}
