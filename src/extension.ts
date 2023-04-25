@@ -45,4 +45,10 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(textChangeDisposable);
 }
 
-export function deactivate() {}
+export function deactivate() {
+  clearTimeout(typingTimer);
+  const activeEditor = vscode.window.activeTextEditor;
+  if (activeEditor) {
+    removeEmoji(activeEditor, symbolDecoration);
+  }
+}
